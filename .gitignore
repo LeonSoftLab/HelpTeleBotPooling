@@ -1,2 +1,6 @@
 config.py
 \doc
+\__pycache__
+*.bak
+shelve.db.dat
+shelve.db.dir
