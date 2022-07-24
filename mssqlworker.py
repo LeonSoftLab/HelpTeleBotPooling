@@ -16,6 +16,11 @@ class mssqlworker:
         with self.connection:
             return self.cursor.execute('SELECT * FROM [dbo].[grouprows] with(nolock)').fetchall()
 
+    def select_all_reports(self):
+        """ Получаем все строки """
+        with self.connection:
+            return self.cursor.execute('SELECT * FROM [dbo].[reports] with(nolock)').fetchall()
+
     def select_all_users(self):
         """ Получаем все строки """
         with self.connection:

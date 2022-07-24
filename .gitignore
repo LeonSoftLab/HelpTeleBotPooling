@@ -1,5 +1,6 @@
 config.py
 \doc
+\repository
 \__pycache__
 *.bak
 shelve.db.dat

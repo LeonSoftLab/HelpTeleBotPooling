@@ -27,6 +27,14 @@ def users(db):
     with shelve.open(SHELVE_NAME) as storage:
         storage['all_users'] = all_users
 
+def reports(db):
+    """
+    Данный метод считает отчёты в базе данных и сохраняет в хранилище.
+    """
+    all_reports = db.select_all_reports()
+    with shelve.open(SHELVE_NAME) as storage:
+        storage['all_reports'] = all_reports
+
 def init_data_from_db():
     """
     Данный метод запускает все процедуры считывания данных из базы.
@@ -35,15 +43,25 @@ def init_data_from_db():
     groups(_db)
     grouprows(_db)
     users(_db)
+    reports(_db)
     _db.close()
 
 def get_groups():
     """
-    Получает из хранилища группы
+    Получает из хранилища группы вопросов(проекты)
     """
     with shelve.open(SHELVE_NAME) as storage:
         all_groups = storage['all_groups']
     return all_groups
+
+def get_reports():
+    """
+    Получает из хранилища доступные отчёты
+    """
+    #TODO: предусмотреть доступ к отчёту
+    with shelve.open(SHELVE_NAME) as storage:
+        all_reports = storage['all_reports']
+    return all_reports
 
 def get_group_bycodename(codename):
     """
@@ -55,6 +73,18 @@ def get_group_bycodename(codename):
         for group in all_groups:
             if group[3] == codename:
                 result = group
+    return result
+
+def get_report_bycodename(codename):
+    """
+    Получает из хранилища отчет по заданному кодовому имени(вызов)
+    """
+    result = None
+    with shelve.open(SHELVE_NAME) as storage:
+        all_reports = storage['all_reports']
+        for report in all_reports:
+            if report[3] == codename:
+                result = report
     return result
 
 def get_grouprows(group_id):
@@ -201,6 +231,38 @@ def generate_markup_groups():
     for group in groups:
         item = types.InlineKeyboardButton(text=str(group[1]), callback_data=str(group[3]))
         markup.add(item)
+    item = types.InlineKeyboardButton(text="<-Назад", callback_data="<-back")
+    markup.add(item)
+    return markup
+
+def generate_markup_reports():
+    """
+    Создаем кастомную клавиатуру для списка отчётов
+    :return: Объект кастомной клавиатуры
+    """
+    markup = types.InlineKeyboardMarkup(); #клавиатура
+
+    reports = get_reports()
+    for report in reports:
+        item = types.InlineKeyboardButton(text=str(report[1]), callback_data=str(report[3]))
+        markup.add(item)
+    item = types.InlineKeyboardButton(text="<-Назад", callback_data="<-back")
+    markup.add(item)
+    return markup
+
+def generate_markup_menu():
+    """
+    Создаем кастомную клавиатуру для главного меню
+    :return: Объект кастомной клавиатуры
+    """
+    markup = types.InlineKeyboardMarkup(); #клавиатура
+
+    item = types.InlineKeyboardButton(text="Получить отчёты", callback_data="reports")
+    markup.add(item)
+
+    item = types.InlineKeyboardButton(text="Получить помощь", callback_data="groups")
+    markup.add(item)
+
     return markup
 
 def generate_markup_grouprows(group):

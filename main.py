@@ -1,14 +1,24 @@
 import telebot;
-import config;
 import utils;
 from telebot import types;
+from config import BOT_TOKEN, DIR_REPOSITORY;
 
 try:
-    bot = telebot.TeleBot(config.BOT_TOKEN)
+    bot = telebot.TeleBot(BOT_TOKEN)
     print("--- Бот подключен успешно;")
 except BaseException as err:
-    print("!!! Возникла ошибка при создании бота: " + config.BOT_TOKEN)
+    print("!!! Возникла ошибка при создании бота: " + BOT_TOKEN)
     print(f"!!! Except: {err=}, {type(err)=}")
+
+def get_menu(message):
+    userstatus = utils.get_user_status(message.chat.id)
+    print(str(message.chat.id)+": get_menu: "+str(userstatus))
+    if userstatus != "Unknown" and userstatus is not None:
+        markup = utils.generate_markup_menu()
+        question = "Выберите пункт меню:"
+        bot.send_message(message.chat.id, text=question, reply_markup=markup);
+    else:
+        send_user_to_home(message)
 
 def get_groups(message):
     userstatus = utils.get_user_status(message.chat.id)
@@ -16,6 +26,16 @@ def get_groups(message):
     if userstatus != "Unknown" and userstatus is not None:
         markup = utils.generate_markup_groups()
         question = "К какой категории относится Ваш вопрос?"
+        bot.send_message(message.chat.id, text=question, reply_markup=markup);
+    else:
+        send_user_to_home(message)
+
+def get_reports(message):
+    userstatus = utils.get_user_status(message.chat.id)
+    print(str(message.chat.id)+": get_reports: "+str(userstatus))
+    if userstatus != "Unknown" and userstatus is not None:
+        markup = utils.generate_markup_reports()
+        question = "Выберите отчёт:"
         bot.send_message(message.chat.id, text=question, reply_markup=markup);
     else:
         send_user_to_home(message)
@@ -47,8 +67,8 @@ def get_telephone(message):
                 print(str(message.chat.id)+": ---Авторизация успешна! Найден пользователь под именем: "+name)
                 bot.send_message(message.chat.id, "Спасибо "+name+", Вы успешно авторизовались. \n"+
                     "Ваша Роль: "+str(utils.get_user_role(message.chat.id)), reply_markup=keyboard_hider)
-                utils.set_user_status(message.chat.id, "InGroups")
-                get_groups(message)
+                utils.set_user_status(message.chat.id, "InMenu")
+                get_menu(message)
             else:
                 print(str(message.chat.id)+": !!! Авторизация не удалась! Номер телефона не найден в базе: "+tel)
                 bot.send_message(message.chat.id, "Ошибка! вашего номера нет в базе: "+tel, reply_markup=keyboard_hider)
@@ -85,7 +105,8 @@ def any_answers(message): #Любые сообщения вне логики б�
     userstatus = utils.get_user_status(message.chat.id)
     print(str(message.chat.id)+": any_answers: "+str(userstatus)+": message: "+message.text)
     if userstatus != "Unknown" and userstatus is not None:
-        bot.send_message(message.chat.id, "Я не понимаю этого");
+        #TODO: Отправить вопрос пользователя на поддержку
+        bot.send_message(message.chat.id, "Спасибо за Ваш вопрос, сейчас я его отправлю профильному специалисту. Ожидайте ответа.");
     else:
         send_user_to_home(message)
 
@@ -95,22 +116,49 @@ def callback_inline(call):
         if call.message:
             userstatus = utils.get_user_status(call.message.chat.id)
             print(str(call.message.chat.id)+": callback_inline: "+str(userstatus)+": call.data: "+str(call.data))
-            if userstatus == "InGroups":
+            if userstatus == "InMenu":
                 keyboard_hider = types.ReplyKeyboardRemove()
-                group = utils.get_group_bycodename(call.data)
+                codename = call.data
                 bot.delete_message(call.message.chat.id, call.message.message_id)
-                bot.send_message(call.message.chat.id, "Категория:\n"+group[1]+"\nОписание категории:\n"+group[2], reply_markup=keyboard_hider)
-                utils.set_user_status(call.message.chat.id, "InGroupRows")
-                get_grouprows(call.message,group)
-                #TODO: Подумать над уровнями (в callbackdata) Реализация подменю
+                if codename == "reports":
+                    utils.set_user_status(call.message.chat.id, "InReports")
+                    get_reports(call.message)
+                elif codename == "groups":
+                    utils.set_user_status(call.message.chat.id, "InGroups")
+                    get_groups(call.message)
+            elif userstatus == "InReports":
+                keyboard_hider = types.ReplyKeyboardRemove()
+                if call.data != "<-back":
+                    report = utils.get_report_bycodename(call.data)
+                    bot.delete_message(call.message.chat.id, call.message.message_id)
+                    bot.send_message(call.message.chat.id, "Отчёт:\n"+report[1]+"\nОписание отчёта:\n"+report[2], reply_markup=keyboard_hider)
+                    bot.send_message(call.message.chat.id, "Подождите немного, я отправляю файл: "+report[4], reply_markup=keyboard_hider)
+                    print(str(call.message.chat.id)+": document_send: "+DIR_REPOSITORY+report[4])
+                    document_send(call.message,DIR_REPOSITORY+report[4])
+                else:
+                    bot.delete_message(call.message.chat.id, call.message.message_id)
+                    utils.set_user_status(call.message.chat.id, "InMenu")
+                    get_menu(call.message)
+            elif userstatus == "InGroups":
+                keyboard_hider = types.ReplyKeyboardRemove()
+                if call.data != "<-back":
+                    group = utils.get_group_bycodename(call.data)
+                    bot.delete_message(call.message.chat.id, call.message.message_id)
+                    bot.send_message(call.message.chat.id, "Категория:\n"+group[1]+"\nОписание категории:\n"+group[2], reply_markup=keyboard_hider)
+                    utils.set_user_status(call.message.chat.id, "InGroupRows")
+                    get_grouprows(call.message,group)
+                else:
+                    bot.delete_message(call.message.chat.id, call.message.message_id)
+                    utils.set_user_status(call.message.chat.id, "InMenu")
+                    get_menu(call.message)
             elif userstatus == "InGroupRows":
                 keyboard_hider = types.ReplyKeyboardRemove()
                 if call.data != "<-back":
                     bot.delete_message(call.message.chat.id, call.message.message_id)
                     grouprow = utils.get_grouprow_bycodename(call.data)
                     bot.send_message(call.message.chat.id, "Подождите немного, я отправляю файл: "+grouprow[2], reply_markup=keyboard_hider)
-                    print(config.DIR_REPOSITORY+grouprow[4])
-                    document_send(call.message,config.DIR_REPOSITORY+grouprow[4])
+                    print(str(call.message.chat.id)+": document_send: "+DIR_REPOSITORY+grouprow[4])
+                    document_send(call.message,DIR_REPOSITORY+grouprow[4])
                 else:
                     bot.delete_message(call.message.chat.id, call.message.message_id)
                     utils.set_user_status(call.message.chat.id, "InGroups")
@@ -126,6 +174,6 @@ if __name__ == '__main__':
         utils.init_data_from_db();
         print("--- База данных SQL подключена успешно;")
     except BaseException as err:
-        print("!!! Возникла ошибка при подключении к базе данных SQL, строка подключения: " + config.CONNECTION_STRING)
+        print("!!! Возникла ошибка при инициализации базы данных SQL")
         print(f"!!! Exception: {err=}, {type(err)=}")
     bot.infinity_polling()
