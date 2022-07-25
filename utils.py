@@ -1,7 +1,7 @@
-import shelve
-from mssqlworker import mssqlworker
-from config import SHELVE_NAME, CONNECTION_STRING
-from telebot import types
+import shelve;
+from mssqlworker import mssqlworker;
+from config import SHELVE_NAME, CONNECTION_STRING;
+from telebot import types;
 
 def groups(db):
     """
@@ -121,104 +121,6 @@ def get_users():
     with shelve.open(SHELVE_NAME) as storage:
         all_users = storage['all_users']
     return all_users
-
-def set_user_status(chat_id, user_status):
-    """
-    Записываем юзера в список и запоминаем его текущий статус.
-    :param chat_id: id чата юзера
-    :param user_status: статус юзера
-    """
-    with shelve.open(SHELVE_NAME) as storage:
-        storage[str(chat_id)+"_user_status"] = user_status
-
-def set_user_role(chat_id, user_role):
-    """
-    Записываем юзера в список и запоминаем его роль.
-    :param chat_id: id чата юзера
-    :param user_role: роль юзера
-    """
-    with shelve.open(SHELVE_NAME) as storage:
-        storage[str(chat_id)+"_user_role"] = user_role
-
-def set_user_id(chat_id, user_id):
-    """
-    Записываем юзера в список и запоминаем id из базы данных.
-    :param chat_id: id чата юзера
-    :param user_id: id юзера из базы
-    """
-    with shelve.open(SHELVE_NAME) as storage:
-        storage[str(chat_id)+"_user_id"] = str(user_id)
-
-def clear_user_data(chat_id):
-    """
-    Чистим данные юзера в хранилище.
-    :param chat_id: id чата юзера
-    """
-    with shelve.open(SHELVE_NAME) as storage:
-        del storage[str(chat_id)+"_user_id"]
-        del storage[str(chat_id)+"_user_status"]
-        del storage[str(chat_id)+"_user_role"]
-
-def auth_user(chat_id, tel_num):
-    """
-    авторизация пользователя
-    В случае, если человека не нашли в базе, возвращаем None
-    """
-    users = get_users();
-    result = False
-    for user in users:
-        if user[2] == tel_num or "+"+str(user[2]) == tel_num:
-            result = True
-            set_user_status(chat_id, "Authorized")
-            set_user_id(chat_id, user[0])
-            set_user_role(chat_id, user[3])
-    return result;
-
-def get_user_status(chat_id):
-    """
-    Получаем статус текущего юзера.
-    В случае, если человек не авторизован, возвращаем None
-    :param chat_id: id юзера
-    :return: (str) Текущий статус
-    """
-    with shelve.open(SHELVE_NAME) as storage:
-        try:
-            result = storage[str(chat_id)+"_user_status"]
-            return result
-        # Если человек не авторизован, ничего не возвращаем
-        except KeyError:
-            return None
-
-def get_user_role(chat_id):
-    """
-    Получаем роль текущего юзера (для определения доступов).
-    В случае, если человек не авторизован, возвращаем None
-    :param chat_id: id юзера
-    :return: (str) Роль пользователя (уровень доступа)
-    """
-    with shelve.open(SHELVE_NAME) as storage:
-        try:
-            result = storage[str(chat_id)+"_user_role"]
-            return result
-        # Если человек не авторизован, ничего не возвращаем
-        except KeyError:
-            return None
-
-def get_user_name(chat_id):
-    """
-    Получаем имя текущего юзера.
-    В случае, если человек не авторизован, возвращаем None
-    :param chat_id: id юзера
-    :return: (str) Имя из базы
-    """
-    result = None
-    with shelve.open(SHELVE_NAME) as storage:
-        users = get_users();
-        id_ = storage[str(chat_id)+"_user_id"]
-        for user in users:
-            if user[0] == int(id_):
-                result = user[1]
-    return result
 
 def generate_markup_groups():
     """
