@@ -41,43 +41,33 @@ class Client:
             self.to_log("!!! Авторизация не удалась! Номер телефона не найден в базе: "+tel_num)
         return result
 
-    def goto_menu(self, message):
-        self.to_log("goto_menu")
+    def goto_(self, type_mark, message, detail=None):
+        self.to_log(type_mark)
         if self.status != "Unknown":
-            markup = utils.generate_markup_menu()
-            question = "Выберите пункт меню:"
-            self.status = "InMenu"
+            markup = utils.generate_markup(type_mark, detail)
+            if type_mark == "menu":
+                question = "Выберите пункт меню:"
+            elif type_mark == "groups":
+                question = "К какой категории относится Ваш вопрос?"
+            elif type_mark == "reports":
+                question = "Выберите отчёт:"
+            elif type_mark == "grouprows":
+                question = "Выберите пункт и я отправлю Вам файл:"
+            self.status = type_mark
             self.bot.send_message(self.chat_id, text=question, reply_markup=markup)
         else:
             self.send_to_home(message)
 
-    def goto_groups(self, message):
-        self.to_log("goto_groups")
-        if self.status != "Unknown":
-            markup = utils.generate_markup_groups()
-            question = "К какой категории относится Ваш вопрос?"
-            self.status = "InGroups"
-            self.bot.send_message(self.chat_id, text=question, reply_markup=markup);
-        else:
-            self.send_to_home(message)
-
-    def goto_reports(self, message):
-        self.to_log("goto_reports")
-        if self.status != "Unknown":
-            markup = utils.generate_markup_reports()
-            question = "Выберите отчёт:"
-            self.status = "InReports"
-            self.bot.send_message(self.chat_id, text=question, reply_markup=markup);
-        else:
-            self.send_to_home(message)
-
-    def goto_grouprows(self, message, group):
-        self.to_log("goto_grouprows")
-        if self.status != "Unknown":
-            markup = utils.generate_markup_grouprows(group)
-            question = "Выберите пункт и я отправлю Вам файл:"
-            self.status = "InGroupRows"
-            self.bot.send_message(self.chat_id, text=question, reply_markup=markup);
+    def goto_telephone(message):
+        self.to_log("telephone")
+        keyboard_hider = types.ReplyKeyboardRemove()
+        if message.contact is not None:
+            if self.auth(message.contact.phone_number):
+                self.bot.send_message(self.chat_id, "Спасибо "+user.name+", Вы успешно авторизовались. \n"+
+                    "Ваша Роль: "+user.role, reply_markup=keyboard_hider)
+                self.goto_("menu", message)
+            else:
+                self.bot.send_message(self.chat_id, "Ошибка! вашего номера нет в базе: "+message.contact.phone_number, reply_markup=keyboard_hider)
         else:
             self.send_to_home(message)
 

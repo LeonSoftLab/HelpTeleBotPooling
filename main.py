@@ -22,7 +22,7 @@ def get_telephone(message):
         if user.auth(message.contact.phone_number):
             bot.send_message(message.chat.id, "Спасибо "+user.name+", Вы успешно авторизовались. \n"+
                 "Ваша Роль: "+user.role, reply_markup=keyboard_hider)
-            user.goto_menu(message)
+            user.goto_("menu", message)
         else:
             bot.send_message(message.chat.id, "Ошибка! вашего номера нет в базе: "+message.contact.phone_number, reply_markup=keyboard_hider)
     else:
@@ -51,7 +51,7 @@ def clear(message): # чистка состояния и чата
 def menu(message): # вернуться в главное меню
     user = clients.get_client(message.chat.id)
     user.to_log("Main:menu")
-    user.goto_menu(message)
+    user.goto_("menu", message)
 
 @bot.message_handler(func=lambda message: True)
 def any_answers(message): #Любые сообщения вне логики бота
@@ -69,15 +69,15 @@ def callback_inline(call):
         if call.message:
             user = clients.get_client(call.message.chat.id)
             user.to_log("callback_inline: call.data: "+str(call.data))
-            if user.status == "InMenu":
+            if user.status == "menu":
                 keyboard_hider = types.ReplyKeyboardRemove()
                 codename = call.data
                 bot.delete_message(call.message.chat.id, call.message.message_id)
                 if codename == "reports":
-                    user.goto_reports(call.message)
+                    user.goto_("reports", call.message)
                 elif codename == "groups":
-                    user.goto_groups(call.message)
-            elif user.status == "InReports":
+                    user.goto_("groups", call.message)
+            elif user.status == "reports":
                 keyboard_hider = types.ReplyKeyboardRemove()
                 if call.data != "<-back":
                     report = utils.get_report_bycodename(call.data)
@@ -87,18 +87,18 @@ def callback_inline(call):
                     document_send(call.message,DIR_REPOSITORY+report[4])
                 else:
                     bot.delete_message(call.message.chat.id, call.message.message_id)
-                    user.goto_menu(call.message)
-            elif user.status == "InGroups":
+                    user.goto_("menu", call.message)
+            elif user.status == "groups":
                 keyboard_hider = types.ReplyKeyboardRemove()
                 if call.data != "<-back":
                     group = utils.get_group_bycodename(call.data)
                     bot.delete_message(call.message.chat.id, call.message.message_id)
                     bot.send_message(call.message.chat.id, "Категория:\n"+group[1]+"\nОписание категории:\n"+group[2], reply_markup=keyboard_hider)
-                    user.goto_grouprows(call.message, group)
+                    user.goto_("grouprows", call.message, group)
                 else:
                     bot.delete_message(call.message.chat.id, call.message.message_id)
-                    user.goto_menu(call.message)
-            elif user.status == "InGroupRows":
+                    user.goto_("menu", call.message)
+            elif user.status == "grouprows":
                 keyboard_hider = types.ReplyKeyboardRemove()
                 if call.data != "<-back":
                     bot.delete_message(call.message.chat.id, call.message.message_id)
@@ -107,7 +107,7 @@ def callback_inline(call):
                     document_send(call.message,DIR_REPOSITORY+grouprow[4])
                 else:
                     bot.delete_message(call.message.chat.id, call.message.message_id)
-                    user.goto_groups(call.message)
+                    user.goto_("groups", call.message)
             else:
                 keyboard_hider = types.ReplyKeyboardRemove()
                 bot.send_message(call.message.chat.id, "Неизвестная кнопка: "+call.data, reply_markup=keyboard_hider)

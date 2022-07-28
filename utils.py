@@ -122,65 +122,43 @@ def get_users():
         all_users = storage['all_users']
     return all_users
 
-def generate_markup_groups():
+def generate_markup(type_mark, detail=None):
     """
-    Создаем кастомную клавиатуру для категорий вопросов
+    Создаем кастомную клавиатуру согласно типа
     :return: Объект кастомной клавиатуры
     """
     markup = types.InlineKeyboardMarkup(); #клавиатура
 
-    groups = get_groups()
-    for group in groups:
-        item = types.InlineKeyboardButton(text=str(group[1]), callback_data=str(group[3]))
+    if type_mark == "groups":
+        groups = get_groups()
+        for group in groups:
+            item = types.InlineKeyboardButton(text=str(group[1]), callback_data=str(group[3]))
+            markup.add(item)
+        item = types.InlineKeyboardButton(text="<-Назад", callback_data="<-back")
         markup.add(item)
-    item = types.InlineKeyboardButton(text="<-Назад", callback_data="<-back")
-    markup.add(item)
-    return markup
 
-def generate_markup_reports():
-    """
-    Создаем кастомную клавиатуру для списка отчётов
-    :return: Объект кастомной клавиатуры
-    """
-    markup = types.InlineKeyboardMarkup(); #клавиатура
-
-    reports = get_reports()
-    for report in reports:
-        item = types.InlineKeyboardButton(text=str(report[1]), callback_data=str(report[3]))
+    if type_mark == "reports":
+        reports = get_reports()
+        for report in reports:
+            item = types.InlineKeyboardButton(text=str(report[1]), callback_data=str(report[3]))
+            markup.add(item)
+        item = types.InlineKeyboardButton(text="<-Назад", callback_data="<-back")
         markup.add(item)
-    item = types.InlineKeyboardButton(text="<-Назад", callback_data="<-back")
-    markup.add(item)
-    return markup
 
-def generate_markup_menu():
-    """
-    Создаем кастомную клавиатуру для главного меню
-    :return: Объект кастомной клавиатуры
-    """
-    markup = types.InlineKeyboardMarkup(); #клавиатура
-
-    item = types.InlineKeyboardButton(text="Получить отчёты", callback_data="reports")
-    markup.add(item)
-
-    item = types.InlineKeyboardButton(text="Получить помощь", callback_data="groups")
-    markup.add(item)
-
-    return markup
-
-def generate_markup_grouprows(group):
-    """
-    Создаем кастомную клавиатуру для меню подгруппы
-    :param group_id: Идентификатор группы
-    :return: Объект кастомной клавиатуры
-    """
-    markup = types.InlineKeyboardMarkup(); #клавиатура
-
-    grouprows = get_grouprows(group[0])
-    for grouprow in grouprows:
-        item = types.InlineKeyboardButton(text=str(grouprow[2]), callback_data=str(group[3]+"_"+grouprow[3]))
+    if type_mark == "menu":
+        item = types.InlineKeyboardButton(text="Получить отчёты", callback_data="reports")
         markup.add(item)
-    item = types.InlineKeyboardButton(text="<-Назад", callback_data="<-back")
-    markup.add(item)
+        item = types.InlineKeyboardButton(text="Получить помощь", callback_data="groups")
+        markup.add(item)
+
+    if type_mark == "grouprows":
+        grouprows = get_grouprows(detail[0])
+        for grouprow in grouprows:
+            item = types.InlineKeyboardButton(text=str(grouprow[2]), callback_data=str(detail[3]+"_"+grouprow[3]))
+            markup.add(item)
+        item = types.InlineKeyboardButton(text="<-Назад", callback_data="<-back")
+        markup.add(item)
+
     return markup
 
 def generate_markup_tel(tel, geo):
