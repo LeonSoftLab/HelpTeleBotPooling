@@ -1,8 +1,16 @@
 import telebot;
 import utils;
 import client;
+from mssqlworker import mssqlworker;
 from telebot import types;
-from config import BOT_TOKEN, DIR_REPOSITORY;
+from config import CONNECTION_STRING, BOT_TOKEN, DIRCONNECTION_STRING, _REPOSITORY;
+
+try:
+    db = mssqlworker(CONNECTION_STRING)
+    print("--- База данных SQL подключена успешно;")
+except BaseException as err:
+    print("!!! Возникла ошибка при инициализации базы данных SQL")
+    print(f"!!! Exception: {err=}, {type(err)=}")
 
 try:
     bot = telebot.TeleBot(BOT_TOKEN)
@@ -56,7 +64,7 @@ def menu(message): # вернуться в главное меню
 @bot.message_handler(func=lambda message: True)
 def any_answers(message): #Любые сообщения вне логики бота
     user = clients.get_client(message.chat.id)
-    user.to_log("any_answers: "+message.text)
+    user.to_log("any_answers: "+user.status+": "+message.text)
     if user.status != "Unknown":
         #TODO: Отправить вопрос пользователя на поддержку
         bot.send_message(message.chat.id, "Спасибо за Ваш вопрос, сейчас я его отправлю профильному специалисту. Ожидайте ответа.");
@@ -115,12 +123,5 @@ def callback_inline(call):
         print(f"Unexpected {err=}, {type(err)=}")
 
 if __name__ == '__main__':
-
-    try:
-        utils.init_data_from_db();
-        print("--- База данных SQL подключена успешно;")
-    except BaseException as err:
-        print("!!! Возникла ошибка при инициализации базы данных SQL")
-        print(f"!!! Exception: {err=}, {type(err)=}")
 
     bot.infinity_polling()

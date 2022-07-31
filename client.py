@@ -9,6 +9,7 @@ class Client:
         self.status = "Unknown"
         self.role = "User"
         self.name = ""
+        self.id = -1
 
     def clear(self):
         """Чистим данные юзера."""
@@ -16,6 +17,7 @@ class Client:
         self.status = "Unknown"
         self.role = "User"
         self.name = ""
+        self.id = -1
         keyboard_hider = types.ReplyKeyboardRemove()
         self.bot.send_message(self.chat_id, "Данные очищены", reply_markup=keyboard_hider)
 
@@ -23,20 +25,20 @@ class Client:
         """Запись в лог событий"""
         print(str(self.chat_id)+": "+msg+": ")
 
-    def auth(self, tel_num):
+    def auth(self, db, tel_num):
         """
         авторизация пользователя
         В случае, если человека не нашли в базе, возвращаем False
         """
-        users = utils.get_users();
+        users = db.get_user(tel_num);
         result = False
-        for user in users:
-            if user[2] == tel_num or "+"+str(user[2]) == tel_num:
-                result = True
-                self.name = user[1]
-                self.role = user[3]
-                self.status = "Authorized"
-                self.to_log("---Авторизация успешна! Найден пользователь под именем: "+user[1])
+        if len(users)>0:
+            result = True
+            self.id = users[0][0]
+            self.name = users[0][1]
+            self.role = users[0][3]
+            self.status = "Authorized"
+            self.to_log("---Авторизация успешна! Найден пользователь под именем: "+users[0][1])
         if result == False:
             self.to_log("!!! Авторизация не удалась! Номер телефона не найден в базе: "+tel_num)
         return result
@@ -52,7 +54,7 @@ class Client:
             elif type_mark == "reports":
                 question = "Выберите отчёт:"
             elif type_mark == "grouprows":
-                question = "Выберите пункт и я отправлю Вам файл:"
+                question = "Выберите какой файл нужно отправить, либо напишите свой вопрос."
             self.status = type_mark
             self.bot.send_message(self.chat_id, text=question, reply_markup=markup)
         else:
@@ -78,9 +80,10 @@ class Client:
 
 class Clients:
     """Класс для работы с подключёнными клиентами"""
-    def __init__(self, bot):
+    def __init__(self, bot, db):
         self.client_list = []
         self.bot = bot
+        self.db = db
 
     def get_client(self, chat_id):
         result = None
@@ -99,3 +102,5 @@ class Clients:
                 result = True
                 self.client_list.remove(client)
         return result
+
+    #self.db.close()
