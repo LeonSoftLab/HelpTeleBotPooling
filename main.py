@@ -3,7 +3,7 @@ import utils;
 import client;
 from mssqlworker import mssqlworker;
 from telebot import types;
-from config import CONNECTION_STRING, BOT_TOKEN, DIRCONNECTION_STRING, _REPOSITORY;
+from config import CONNECTION_STRING, BOT_TOKEN, DIR_REPOSITORY;
 
 try:
     db = mssqlworker(CONNECTION_STRING)
@@ -19,7 +19,8 @@ except BaseException as err:
     print("!!! Возникла ошибка при создании бота: " + BOT_TOKEN)
     print(f"!!! Except: {err=}, {type(err)=}")
 
-clients = client.Clients(bot)
+if db is not None and bot is not None:
+    clients = client.Clients(bot, db)
 
 def get_telephone(message):
     user = clients.get_client(message.chat.id)
@@ -88,7 +89,7 @@ def callback_inline(call):
             elif user.status == "reports":
                 keyboard_hider = types.ReplyKeyboardRemove()
                 if call.data != "<-back":
-                    report = utils.get_report_bycodename(call.data)
+                    report = db.get_reports(-1, call.data) #TODO сделать перебор массива (много значений)
                     bot.delete_message(call.message.chat.id, call.message.message_id)
                     bot.send_message(call.message.chat.id, "Отчёт:\n"+report[1]+"\nОписание отчёта:\n"+report[2], reply_markup=keyboard_hider)
                     bot.send_message(call.message.chat.id, "Подождите немного, я отправляю файл: "+report[4], reply_markup=keyboard_hider)
@@ -99,7 +100,7 @@ def callback_inline(call):
             elif user.status == "groups":
                 keyboard_hider = types.ReplyKeyboardRemove()
                 if call.data != "<-back":
-                    group = utils.get_group_bycodename(call.data)
+                    group = db.get_groups(call.data)
                     bot.delete_message(call.message.chat.id, call.message.message_id)
                     bot.send_message(call.message.chat.id, "Категория:\n"+group[1]+"\nОписание категории:\n"+group[2], reply_markup=keyboard_hider)
                     user.goto_("grouprows", call.message, group)
@@ -110,7 +111,7 @@ def callback_inline(call):
                 keyboard_hider = types.ReplyKeyboardRemove()
                 if call.data != "<-back":
                     bot.delete_message(call.message.chat.id, call.message.message_id)
-                    grouprow = utils.get_grouprow_bycodename(call.data)
+                    grouprow = db.get_grouprows_by_split_codename(call.data) #TODO сделать перебор массива (много значений)
                     bot.send_message(call.message.chat.id, "Подождите немного, я отправляю файл: "+grouprow[2], reply_markup=keyboard_hider)
                     document_send(call.message,DIR_REPOSITORY+grouprow[4])
                 else:
@@ -123,5 +124,5 @@ def callback_inline(call):
         print(f"Unexpected {err=}, {type(err)=}")
 
 if __name__ == '__main__':
-
-    bot.infinity_polling()
+    if db is not None and bot is not None and clients is not None:
+        bot.infinity_polling()

@@ -25,9 +25,9 @@ def generate_markup(type_mark, db, detail=None):
         markup.add(item)
 
     if type_mark == "menu":
-        item = types.InlineKeyboardButton(text="Получить отчёты", callback_data="reports")
+        item = types.InlineKeyboardButton(text="Получить отчёт", callback_data="reports")
         markup.add(item)
-        item = types.InlineKeyboardButton(text="Получить помощь", callback_data="groups")
+        item = types.InlineKeyboardButton(text="Получить инструкцию", callback_data="groups")
         markup.add(item)
 
     if type_mark == "grouprows":

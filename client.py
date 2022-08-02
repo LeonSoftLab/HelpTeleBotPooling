@@ -3,9 +3,10 @@ from telebot import types;
 
 class Client:
     """Класс содержащий информацию по юзеру"""
-    def __init__(self, chat_id, bot):
+    def __init__(self, chat_id, bot, db):
         self.chat_id = chat_id
         self.bot = bot
+        self.db = db
         self.status = "Unknown"
         self.role = "User"
         self.name = ""
@@ -25,36 +26,35 @@ class Client:
         """Запись в лог событий"""
         print(str(self.chat_id)+": "+msg+": ")
 
-    def auth(self, db, tel_num):
+    def auth(self, tel_num):
         """
         авторизация пользователя
         В случае, если человека не нашли в базе, возвращаем False
         """
-        users = db.get_user(tel_num);
-        result = False
-        if len(users)>0:
-            result = True
-            self.id = users[0][0]
-            self.name = users[0][1]
-            self.role = users[0][3]
+        user = self.db.get_user(tel_num);
+        result = user is not None
+        if result:
+            self.id = user[0]
+            self.name = user[1]
+            self.role = user[3]
             self.status = "Authorized"
-            self.to_log("---Авторизация успешна! Найден пользователь под именем: "+users[0][1])
-        if result == False:
+            self.to_log("---Авторизация успешна! Найден пользователь под именем: "+user[1])
+        else:
             self.to_log("!!! Авторизация не удалась! Номер телефона не найден в базе: "+tel_num)
         return result
 
     def goto_(self, type_mark, message, detail=None):
         self.to_log(type_mark)
         if self.status != "Unknown":
-            markup = utils.generate_markup(type_mark, detail)
+            markup = utils.generate_markup(type_mark, self.db, detail)
             if type_mark == "menu":
                 question = "Выберите пункт меню:"
             elif type_mark == "groups":
-                question = "К какой категории относится Ваш вопрос?"
+                question = "Выберите проект:"
             elif type_mark == "reports":
                 question = "Выберите отчёт:"
             elif type_mark == "grouprows":
-                question = "Выберите какой файл нужно отправить, либо напишите свой вопрос."
+                question = "Выберите какой файл нужно отправить, либо напишите запрос в поддержку."
             self.status = type_mark
             self.bot.send_message(self.chat_id, text=question, reply_markup=markup)
         else:
@@ -91,7 +91,7 @@ class Clients:
             if client.chat_id == chat_id:
                 result = client
         if result is None:
-            result = Client(chat_id, self.bot)
+            result = Client(chat_id, self.bot, self.db)
             self.client_list.append(result)
         return result
 
@@ -102,5 +102,3 @@ class Clients:
                 result = True
                 self.client_list.remove(client)
         return result
-
-    #self.db.close()
