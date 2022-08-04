@@ -1,9 +1,12 @@
+import os;
 import telebot;
+import google.auth;
 import utils;
 import client;
+import dialogagent;
 from mssqlworker import mssqlworker;
 from telebot import types;
-from config import CONNECTION_STRING, BOT_TOKEN, DIR_REPOSITORY;
+from config import CONNECTION_STRING, BOT_TOKEN, DIR_REPOSITORY, DIR_SERVICE_KEY_DIALOG_BOT;
 
 try:
     db = mssqlworker(CONNECTION_STRING)
@@ -19,8 +22,17 @@ except BaseException as err:
     print("!!! Возникла ошибка при создании бота: " + BOT_TOKEN)
     print(f"!!! Except: {err=}, {type(err)=}")
 
-if db is not None and bot is not None:
+try:
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = DIR_SERVICE_KEY_DIALOG_BOT
+    credentials, project_id = google.auth.default()
+    language_code = "ru"
+except BaseException as err:
+    print("!!! Возникла ошибка при инициализации google dialogflow: " + DIR_SERVICE_KEY_DIALOG_BOT)
+    print(f"!!! Except: {err=}, {type(err)=}")
+
+if db is not None and bot is not None and credentials is not None:
     clients = client.Clients(bot, db)
+    dialog_agent = dialogagent.DialogAgent(credentials, project_id)
 
 def get_telephone(message):
     user = clients.get_client(message.chat.id)
@@ -65,10 +77,14 @@ def menu(message): # вернуться в главное меню
 @bot.message_handler(func=lambda message: True)
 def any_answers(message): #Любые сообщения вне логики бота
     user = clients.get_client(message.chat.id)
-    user.to_log("any_answers: "+user.status+": "+message.text)
+    user.to_log(f"any_answers: {user.status=} : {user.last_context=} : {message.text=}")
     if user.status != "Unknown":
-        #TODO: Отправить вопрос пользователя на поддержку
-        bot.send_message(message.chat.id, "Спасибо за Ваш вопрос, сейчас я его отправлю профильному специалисту. Ожидайте ответа.");
+        session = dialog_agent.get_session(message.chat.id)
+        query_result = dialog_agent.send_message(session[1],language_code,message.text)
+
+        user.to_log(f"dialog_agent: {query_result.intent.display_name=} : {query_result.intent_detection_confidence=} : {query_result.fulfillment_text=}")
+        bot.send_message(message.chat.id, query_result.fulfillment_text);
+        #bot.send_message(message.chat.id, "Спасибо за Ваш вопрос, сейчас я его отправлю профильному специалисту. Ожидайте ответа.");
     else:
         user.send_to_home(message)
 
@@ -78,14 +94,12 @@ def callback_inline(call):
         if call.message:
             user = clients.get_client(call.message.chat.id)
             user.to_log("callback_inline: call.data: "+str(call.data))
+            user.last_context = str(call.data)
             if user.status == "menu":
                 keyboard_hider = types.ReplyKeyboardRemove()
                 codename = call.data
                 bot.delete_message(call.message.chat.id, call.message.message_id)
-                if codename == "reports":
-                    user.goto_("reports", call.message)
-                elif codename == "groups":
-                    user.goto_("groups", call.message)
+                user.goto_(codename, call.message)
             elif user.status == "reports":
                 keyboard_hider = types.ReplyKeyboardRemove()
                 if call.data != "<-back":

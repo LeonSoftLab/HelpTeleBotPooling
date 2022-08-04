@@ -1,6 +1,5 @@
 from telebot import types;
 
-
 def generate_markup(type_mark, db, detail=None):
     """
     Создаем кастомную клавиатуру согласно типа
@@ -28,6 +27,8 @@ def generate_markup(type_mark, db, detail=None):
         item = types.InlineKeyboardButton(text="Получить отчёт", callback_data="reports")
         markup.add(item)
         item = types.InlineKeyboardButton(text="Получить инструкцию", callback_data="groups")
+        markup.add(item)
+        item = types.InlineKeyboardButton(text="Задать вопрос", callback_data="dialog")
         markup.add(item)
 
     if type_mark == "grouprows":

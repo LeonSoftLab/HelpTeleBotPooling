@@ -11,6 +11,7 @@ class Client:
         self.role = "User"
         self.name = ""
         self.id = -1
+        self.last_context =""
 
     def clear(self):
         """Чистим данные юзера."""
@@ -19,6 +20,7 @@ class Client:
         self.role = "User"
         self.name = ""
         self.id = -1
+        self.last_context =""
         keyboard_hider = types.ReplyKeyboardRemove()
         self.bot.send_message(self.chat_id, "Данные очищены", reply_markup=keyboard_hider)
 
@@ -45,18 +47,24 @@ class Client:
 
     def goto_(self, type_mark, message, detail=None):
         self.to_log(type_mark)
+        #if not any(word in self.status for word in ["Unknown", "dialog"]):
         if self.status != "Unknown":
-            markup = utils.generate_markup(type_mark, self.db, detail)
-            if type_mark == "menu":
-                question = "Выберите пункт меню:"
-            elif type_mark == "groups":
-                question = "Выберите проект:"
-            elif type_mark == "reports":
-                question = "Выберите отчёт:"
-            elif type_mark == "grouprows":
-                question = "Выберите какой файл нужно отправить, либо напишите запрос в поддержку."
-            self.status = type_mark
-            self.bot.send_message(self.chat_id, text=question, reply_markup=markup)
+            if type_mark != "dialog":
+                markup = utils.generate_markup(type_mark, self.db, detail)
+                if type_mark == "menu":
+                    question = "Выберите пункт меню:"
+                elif type_mark == "groups":
+                    question = "Выберите проект:"
+                elif type_mark == "reports":
+                    question = "Выберите отчёт:"
+                elif type_mark == "grouprows":
+                    question = "Выберите какой файл нужно отправить, если Вы не нашли нужного файла, напишите запрос в поддержку."
+                self.status = type_mark
+                self.bot.send_message(self.chat_id, text=question, reply_markup=markup)
+            else:
+                self.status = type_mark
+                keyboard_hider = types.ReplyKeyboardRemove()
+                self.bot.send_message(self.chat_id, "Пожалуйста, задайте мне свой вопрос.", reply_markup=keyboard_hider)
         else:
             self.send_to_home(message)
 
