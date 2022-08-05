@@ -12,6 +12,7 @@ class Client:
         self.name = ""
         self.id = -1
         self.last_context =""
+        self.list_messages = []
 
     def clear(self):
         """Чистим данные юзера."""
@@ -21,12 +22,18 @@ class Client:
         self.name = ""
         self.id = -1
         self.last_context =""
+        #TODO: пройтись по списку self.list_messages и поудалять сообщения
+        #bot.delete_message(message.chat.id, message.message_id)
+        
         keyboard_hider = types.ReplyKeyboardRemove()
         self.bot.send_message(self.chat_id, "Данные очищены", reply_markup=keyboard_hider)
 
     def to_log(self, msg):
         """Запись в лог событий"""
         print(str(self.chat_id)+": "+msg+": ")
+        event = msg.split(":")[0]
+        description = ":".join(msg.split(":")[1:])
+        self.db.set_logevents(self.id, self.chat_id, event, self.status, description)
 
     def auth(self, tel_num):
         """
@@ -40,9 +47,9 @@ class Client:
             self.name = user[1]
             self.role = user[3]
             self.status = "Authorized"
-            self.to_log("---Авторизация успешна! Найден пользователь под именем: "+user[1])
+            self.to_log("auth: ---Авторизация успешна! Найден пользователь под именем: "+user[1])
         else:
-            self.to_log("!!! Авторизация не удалась! Номер телефона не найден в базе: "+tel_num)
+            self.to_log("auth: !!! Авторизация не удалась! Номер телефона не найден в базе: "+tel_num)
         return result
 
     def goto_(self, type_mark, message, detail=None):
@@ -83,7 +90,7 @@ class Client:
 
     def send_to_home(self, message):
         keyboard_hider = types.ReplyKeyboardRemove()
-        print(str(self.chat_id)+": Незарегистрированный пользователь отправил данные: "+message.text)
+        print(str(self.chat_id)+": send_to_home: Незарегистрированный пользователь отправил данные: "+message.text)
         self.bot.send_message(self.chat_id, 'Вы не указали свой контакт! Пройдите авторизацию : /start', reply_markup=keyboard_hider)
 
 class Clients:

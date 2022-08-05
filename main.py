@@ -65,17 +65,17 @@ def start(message): # Название функции не играет ника
 @bot.message_handler(commands=["clear"])
 def clear(message): # чистка состояния и чата
     user = clients.get_client(message.chat.id)
-    user.to_log("Main:clear")
+    user.to_log("Main: clear")
     user.clear()
 
 @bot.message_handler(commands=["menu"])
 def menu(message): # вернуться в главное меню
     user = clients.get_client(message.chat.id)
-    user.to_log("Main:menu")
+    user.to_log("Main: menu")
     user.goto_("menu", message)
 
 @bot.message_handler(func=lambda message: True)
-def any_answers(message): #Любые сообщения вне логики бота
+def any_answers(message): #Любые сообщения (не по действиям кнопок)
     user = clients.get_client(message.chat.id)
     user.to_log(f"any_answers: {user.status=} : {user.last_context=} : {message.text=}")
     if user.status != "Unknown":
@@ -83,8 +83,10 @@ def any_answers(message): #Любые сообщения вне логики б�
         query_result = dialog_agent.send_message(session[1],language_code,message.text)
 
         user.to_log(f"dialog_agent: {query_result.intent.display_name=} : {query_result.intent_detection_confidence=} : {query_result.fulfillment_text=}")
-        bot.send_message(message.chat.id, query_result.fulfillment_text);
-        #bot.send_message(message.chat.id, "Спасибо за Ваш вопрос, сейчас я его отправлю профильному специалисту. Ожидайте ответа.");
+        if query_result.fulfillment_text != "":
+            bot.send_message(message.chat.id, query_result.fulfillment_text)
+        else:
+            bot.send_message(message.chat.id, "Не понимаю вопроса");
     else:
         user.send_to_home(message)
 

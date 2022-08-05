@@ -28,7 +28,7 @@ def generate_markup(type_mark, db, detail=None):
         markup.add(item)
         item = types.InlineKeyboardButton(text="Получить инструкцию", callback_data="groups")
         markup.add(item)
-        item = types.InlineKeyboardButton(text="Задать вопрос", callback_data="dialog")
+        item = types.InlineKeyboardButton(text="Задать вопрос (тест)", callback_data="dialog")
         markup.add(item)
 
     if type_mark == "grouprows":
