@@ -33,7 +33,12 @@ class Client:
         print(str(self.chat_id)+": "+msg+": ")
         event = msg.split(":")[0]
         description = ":".join(msg.split(":")[1:])
-        self.db.set_logevents(self.id, self.chat_id, event, self.status, description)
+        self.db.add_logevent(self.id, self.chat_id, event, self.status, description)
+
+    def to_task(self, message_text):
+        """Запись в лог событий"""
+        self.to_log("to_task")
+        self.db.add_task(self.id, self.last_context, message_text)
 
     def auth(self, tel_num):
         """

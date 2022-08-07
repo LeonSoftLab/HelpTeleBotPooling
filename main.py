@@ -81,12 +81,15 @@ def any_answers(message): #Любые сообщения (не по действ
     if user.status != "Unknown":
         session = dialog_agent.get_session(message.chat.id)
         query_result = dialog_agent.send_message(session[1],language_code,message.text)
-
         user.to_log(f"dialog_agent: {query_result.intent.display_name=} : {query_result.intent_detection_confidence=} : {query_result.fulfillment_text=}")
         if query_result.fulfillment_text != "":
             bot.send_message(message.chat.id, query_result.fulfillment_text)
+            if query_result.intent.display_name == "Default Fallback Intent":
+                user.to_task(message.text)
+                bot.send_message(message.chat.id, "На данный вопрос я затрудняюсь ответить, сейчас я его передам профильному специалисту.")
         else:
-            bot.send_message(message.chat.id, "Не понимаю вопроса");
+            user.to_task(message.text)
+            bot.send_message(message.chat.id, "На данный вопрос я затрудняюсь ответить, сейчас я его передам профильному специалисту.")
     else:
         user.send_to_home(message)
 

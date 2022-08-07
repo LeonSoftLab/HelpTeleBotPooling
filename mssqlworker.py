@@ -48,7 +48,7 @@ class mssqlworker:
         recset = self.cursor.execute("SELECT * FROM [dbo].[users] with(nolock) WHERE [tel]=? or '+'+[tel]=?", (tel,tel)).fetchone()
         return recset
 
-    def set_logevents(self, iduser, chat_id, event, status, description):
+    def add_logevent(self, iduser, chat_id, event, status, description):
         """ Делаем запись в лог событий """
         self.cursor.execute("INSERT INTO [dbo].[logevents] "+
         "           ([iduser] "+
@@ -64,6 +64,18 @@ class mssqlworker:
         "           ,? "+
         "           ,? "+
         "           ,?) ", (iduser,chat_id,event,status,description))
+        self.connection.commit()
+
+    def add_task(self, iduser, last_context, message_text):
+        """ Делаем запись в задачи пользователя """
+        self.cursor.execute("INSERT INTO [dbo].[dh_tasks] "+
+        "           ([iduser] "+
+        "           ,[last_context] "+
+        "           ,[message_text]) "+
+        "     VALUES "+
+        "           (? "+
+        "           ,? "+
+        "           ,? )", (iduser, last_context, message_text))
         self.connection.commit()
 
     def close(self):

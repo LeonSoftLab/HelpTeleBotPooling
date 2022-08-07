@@ -29,13 +29,16 @@ class DialogAgent:
 
 if __name__ == '__main__':
     import os
+    import google.auth
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = 'doc\helpbot-vinal-b25c396a08dc.json'
     language_code = "ru"
     credentials, project_id = google.auth.default()
     dialog_agent = DialogAgent(credentials, project_id)
     session = dialog_agent.get_session(12345)
-    query_result = dialog_agent.send_message(session[1],language_code,"Как настроить удаленку?")
+    query_result = dialog_agent.send_message(session[1],language_code,"А почему нет проекта ЗП?")
     print('=' * 20)
     print('Query text: {}'.format(query_result.query_text))
     print('Detected intent: {} (confidence: {})\n'.format(query_result.intent.display_name,query_result.intent_detection_confidence))
     print('Fulfillment text: {}\n'.format(query_result.fulfillment_text))
+    print('=' * 20)
+    print(query_result)
