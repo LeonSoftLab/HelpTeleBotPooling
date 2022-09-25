@@ -1,4 +1,8 @@
 from telebot import types;
+from datetime import datetime;
+
+def get_time():
+    return str(datetime.now())+': '
 
 def generate_markup(type_mark, db, detail=None):
     """

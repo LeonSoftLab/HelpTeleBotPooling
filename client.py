@@ -30,7 +30,7 @@ class Client:
 
     def to_log(self, msg):
         """Запись в лог событий"""
-        print(str(self.chat_id)+": "+msg+": ")
+        print(utils.get_time()+str(self.chat_id)+": "+msg+": ")
         event = msg.split(":")[0]
         description = ":".join(msg.split(":")[1:])
         self.db.add_logevent(self.id, self.chat_id, event, self.status, description)
@@ -95,7 +95,7 @@ class Client:
 
     def send_to_home(self, message):
         keyboard_hider = types.ReplyKeyboardRemove()
-        print(str(self.chat_id)+": send_to_home: Незарегистрированный пользователь отправил данные: "+message.text)
+        print(utils.get_time()+str(self.chat_id)+": send_to_home: Незарегистрированный пользователь отправил данные: "+message.text)
         self.bot.send_message(self.chat_id, 'Вы не указали свой контакт! Пройдите авторизацию : /start', reply_markup=keyboard_hider)
 
 class Clients:

@@ -1,4 +1,6 @@
 import config;
+import utils;
+from datetime import datetime;
 from google.cloud import dialogflow_v2
 
 class DialogAgent:
@@ -36,9 +38,9 @@ if __name__ == '__main__':
     dialog_agent = DialogAgent(credentials, project_id)
     session = dialog_agent.get_session(12345)
     query_result = dialog_agent.send_message(session[1],language_code,"А почему нет проекта ЗП?")
-    print('=' * 20)
-    print('Query text: {}'.format(query_result.query_text))
-    print('Detected intent: {} (confidence: {})\n'.format(query_result.intent.display_name,query_result.intent_detection_confidence))
-    print('Fulfillment text: {}\n'.format(query_result.fulfillment_text))
-    print('=' * 20)
-    print(query_result)
+    print(utils.get_time()+'=' * 20)
+    print(utils.get_time()+'Query text: {}'.format(query_result.query_text))
+    print(utils.get_time()+'Detected intent: {} (confidence: {})\n'.format(query_result.intent.display_name,query_result.intent_detection_confidence))
+    print(utils.get_time()+'Fulfillment text: {}\n'.format(query_result.fulfillment_text))
+    print(utils.get_time()+'=' * 20)
+    print(utils.get_time()+query_result)

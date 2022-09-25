@@ -4,31 +4,32 @@ import google.auth;
 import utils;
 import client;
 import dialogagent;
+from datetime import datetime;
 from mssqlworker import mssqlworker;
 from telebot import types;
 from config import CONNECTION_STRING, BOT_TOKEN, DIR_REPOSITORY, DIR_SERVICE_KEY_DIALOG_BOT;
 
 try:
     db = mssqlworker(CONNECTION_STRING)
-    print("--- База данных SQL подключена успешно;")
+    print(utils.get_time()+"--- База данных SQL подключена успешно;")
 except BaseException as err:
-    print("!!! Возникла ошибка при инициализации базы данных SQL")
-    print(f"!!! Exception: {err=}, {type(err)=}")
+    print(utils.get_time()+"!!! Возникла ошибка при инициализации базы данных SQL")
+    print(utils.get_time()+f"!!! Exception: {err=}, {type(err)=}")
 
 try:
     bot = telebot.TeleBot(BOT_TOKEN)
-    print("--- Бот подключен успешно;")
+    print(utils.get_time()+"--- Бот подключен успешно;")
 except BaseException as err:
-    print("!!! Возникла ошибка при создании бота: " + BOT_TOKEN)
-    print(f"!!! Except: {err=}, {type(err)=}")
+    print(utils.get_time()+"!!! Возникла ошибка при создании бота: " + BOT_TOKEN)
+    print(utils.get_time()+f"!!! Except: {err=}, {type(err)=}")
 
 try:
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = DIR_SERVICE_KEY_DIALOG_BOT
     credentials, project_id = google.auth.default()
     language_code = "ru"
 except BaseException as err:
-    print("!!! Возникла ошибка при инициализации google dialogflow: " + DIR_SERVICE_KEY_DIALOG_BOT)
-    print(f"!!! Except: {err=}, {type(err)=}")
+    print(utils.get_time()+"!!! Возникла ошибка при инициализации google dialogflow: " + DIR_SERVICE_KEY_DIALOG_BOT)
+    print(utils.get_time()+f"!!! Except: {err=}, {type(err)=}")
 
 if db is not None and bot is not None and credentials is not None:
     clients = client.Clients(bot, db)
@@ -51,7 +52,7 @@ def get_telephone(message):
 
 def document_send(message, file_name):
     with open(file_name, 'rb') as new_file:
-        print(str(message.chat.id)+": document_send: "+file_name)
+        print(utils.get_time()+str(message.chat.id)+": document_send: "+file_name)
         bot.send_document(message.chat.id, new_file)
 
 @bot.message_handler(commands=["start"])
@@ -83,10 +84,11 @@ def any_answers(message): #Любые сообщения (не по действ
         query_result = dialog_agent.send_message(session[1],language_code,message.text)
         user.to_log(f"dialog_agent: {query_result.intent.display_name=} : {query_result.intent_detection_confidence=} : {query_result.fulfillment_text=}")
         if query_result.fulfillment_text != "":
-            bot.send_message(message.chat.id, query_result.fulfillment_text)
             if query_result.intent.display_name == "Default Fallback Intent":
                 user.to_task(message.text)
                 bot.send_message(message.chat.id, "На данный вопрос я затрудняюсь ответить, сейчас я его передам профильному специалисту.")
+            else:
+                bot.send_message(message.chat.id, query_result.fulfillment_text)
         else:
             user.to_task(message.text)
             bot.send_message(message.chat.id, "На данный вопрос я затрудняюсь ответить, сейчас я его передам профильному специалисту.")
@@ -140,7 +142,7 @@ def callback_inline(call):
                 keyboard_hider = types.ReplyKeyboardRemove()
                 bot.send_message(call.message.chat.id, "Неизвестная кнопка: "+call.data, reply_markup=keyboard_hider)
     except BaseException as err:
-        print(f"Unexpected {err=}, {type(err)=}")
+        print(utils.get_time()+f"Unexpected {err=}, {type(err)=}")
 
 if __name__ == '__main__':
     if db is not None and bot is not None and clients is not None:
