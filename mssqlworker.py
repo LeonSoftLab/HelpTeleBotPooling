@@ -1,5 +1,5 @@
-import pyodbc;
-import config;
+import pyodbc
+import config
 
 class mssqlworker:
 

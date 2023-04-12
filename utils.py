@@ -1,5 +1,16 @@
-from telebot import types;
-from datetime import datetime;
+import re
+from telebot import types
+from datetime import datetime
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.linear_model import LogisticRegression
+from config import DIALOG_DB
+
+alphabet = ' 1234567890-йцукенгшщзхъфывапролджэячсмитьбюёqwertyuiopasdfghjklzxcvbnm?%.,()!:;'
+
+def clean_str(r):
+    r = r.lower()
+    r = [c for c in r if c in alphabet]
+    return ''.join(r)
 
 def get_time():
     return str(datetime.now())+': '
@@ -61,3 +72,39 @@ def generate_markup_tel(tel, geo):
         button_geo = types.KeyboardButton(text="Отправить местоположение", request_location=True)
         markup.add(button_geo);
     return markup
+
+
+def update_dictagent():
+    with open(DIALOG_DB, encoding='utf-8') as f:
+        content = f.read()
+
+    blocks = content.split('\n')
+    dataset = []
+
+    for block in blocks:
+        replicas = block.split('\\')[:2]
+        if len(replicas) == 2:
+            pair = [clean_str(replicas[0]), clean_str(replicas[1])]
+            if pair[0] and pair[1]:
+                dataset.append(pair)
+
+    X_text = []
+    y = []
+
+    for question, answer in dataset[:10000]:
+        X_text.append(question)
+        y += [answer]
+
+    vectorizer = CountVectorizer()
+    X = vectorizer.fit_transform(X_text)
+
+    clf = LogisticRegression()
+    clf.fit(X, y)
+
+    return vectorizer, clf
+
+
+def add_answer(question, messagetext):
+    a = f"{question}\{messagetext.lower()} \n"
+    with open(DIALOG_DB, "a", encoding='utf-8') as f:
+        f.write(a)

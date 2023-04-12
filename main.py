@@ -1,13 +1,14 @@
-import os;
-import telebot;
-import google.auth;
-import utils;
-import client;
-import dialogagent;
-from datetime import datetime;
-from mssqlworker import mssqlworker;
-from telebot import types;
-from config import CONNECTION_STRING, BOT_TOKEN, DIR_REPOSITORY, DIR_SERVICE_KEY_DIALOG_BOT;
+import telebot
+import utils
+import client
+from mssqlworker import mssqlworker
+from telebot import types
+from config import CONNECTION_STRING, BOT_TOKEN, DIR_REPOSITORY, DIALOG_DB
+
+current_question = ''
+vectorizer = None
+clf = None
+clients = None
 
 try:
     db = mssqlworker(CONNECTION_STRING)
@@ -24,16 +25,21 @@ except BaseException as err:
     print(utils.get_time()+f"!!! Except: {err=}, {type(err)=}")
 
 try:
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = DIR_SERVICE_KEY_DIALOG_BOT
-    credentials, project_id = google.auth.default()
-    language_code = "ru"
+    vectorizer, clf = utils.update_dictagent()
+    print(utils.get_time() + "--- База ответов подключена успешно;")
 except BaseException as err:
-    print(utils.get_time()+"!!! Возникла ошибка при инициализации google dialogflow: " + DIR_SERVICE_KEY_DIALOG_BOT)
+    print(utils.get_time()+"!!! Возникла ошибка при инициализации update_dictagent: " + DIALOG_DB)
     print(utils.get_time()+f"!!! Except: {err=}, {type(err)=}")
 
-if db is not None and bot is not None and credentials is not None:
+if db is not None and bot is not None and vectorizer is not None:
     clients = client.Clients(bot, db)
-    dialog_agent = dialogagent.DialogAgent(credentials, project_id)
+else:
+    print(utils.get_time()+" Обьект клиента не был создан ")
+
+def get_generative_replica(text):
+    text_vector = vectorizer.transform([text]).toarray()[0]
+    question = clf.predict([text_vector])[0]
+    return question
 
 def get_telephone(message):
     user = clients.get_client(message.chat.id)
@@ -80,18 +86,21 @@ def any_answers(message): #Любые сообщения (не по действ
     user = clients.get_client(message.chat.id)
     user.to_log(f"any_answers: {user.status=} : {user.last_context=} : {message.text=}")
     if user.status != "Unknown":
-        session = dialog_agent.get_session(message.chat.id)
-        query_result = dialog_agent.send_message(session[1],language_code,message.text)
-        user.to_log(f"dialog_agent: {query_result.intent.display_name=} : {query_result.intent_detection_confidence=} : {query_result.fulfillment_text=}")
-        if query_result.fulfillment_text != "":
-            if query_result.intent.display_name == "Default Fallback Intent":
+        command = message.text.lower()
+        if command == "не так":
+            bot.send_message(message.chat.id, "а как?")
+            bot.register_next_step_handler(message, wrong)
+        else:
+            global current_question
+            current_question = command
+            reply = get_generative_replica(command)
+            user.to_log(f"dialog_agent: {reply=}")
+            if reply != "":
+                user.to_task(message.text)
+                bot.send_message(message.chat.id, reply)
+            else:
                 user.to_task(message.text)
                 bot.send_message(message.chat.id, "На данный вопрос я затрудняюсь ответить, сейчас я его передам профильному специалисту.")
-            else:
-                bot.send_message(message.chat.id, query_result.fulfillment_text)
-        else:
-            user.to_task(message.text)
-            bot.send_message(message.chat.id, "На данный вопрос я затрудняюсь ответить, сейчас я его передам профильному специалисту.")
     else:
         user.send_to_home(message)
 
@@ -114,7 +123,7 @@ def callback_inline(call):
                     bot.delete_message(call.message.chat.id, call.message.message_id)
                     bot.send_message(call.message.chat.id, "Отчёт:\n"+report[1]+"\nОписание отчёта:\n"+report[2], reply_markup=keyboard_hider)
                     bot.send_message(call.message.chat.id, "Подождите немного, я отправляю файл: "+report[4], reply_markup=keyboard_hider)
-                    document_send(call.message,DIR_REPOSITORY+report[4])
+                    document_send(call.message, DIR_REPOSITORY+report[4])
                 else:
                     bot.delete_message(call.message.chat.id, call.message.message_id)
                     user.goto_("menu", call.message)
@@ -134,7 +143,7 @@ def callback_inline(call):
                     bot.delete_message(call.message.chat.id, call.message.message_id)
                     grouprow = db.get_grouprows_by_split_codename(call.data) #TODO сделать перебор массива (много значений)
                     bot.send_message(call.message.chat.id, "Подождите немного, я отправляю файл: "+grouprow[2], reply_markup=keyboard_hider)
-                    document_send(call.message,DIR_REPOSITORY+grouprow[4])
+                    document_send(call.message, DIR_REPOSITORY+grouprow[4])
                 else:
                     bot.delete_message(call.message.chat.id, call.message.message_id)
                     user.goto_("groups", call.message)
@@ -143,6 +152,13 @@ def callback_inline(call):
                 bot.send_message(call.message.chat.id, "Неизвестная кнопка: "+call.data, reply_markup=keyboard_hider)
     except BaseException as err:
         print(utils.get_time()+f"Unexpected {err=}, {type(err)=}")
+
+def wrong(message):
+    utils.add_answer(current_question, message.text)
+    bot.send_message(message.from_user.id, "ОК, я запомнил это :)")
+    global vectorizer, clf
+    vectorizer, clf = utils.update_dictagent()
+
 
 if __name__ == '__main__':
     if db is not None and bot is not None and clients is not None:

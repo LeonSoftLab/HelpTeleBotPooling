@@ -5,3 +5,4 @@ config.py
 *.bak
 shelve.db.dat
 shelve.db.dir
+\.idea
