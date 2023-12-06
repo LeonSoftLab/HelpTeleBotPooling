@@ -1,2 +1,2 @@
 # HelpTeleBotPooling
- Чат бот тех поддержки и информирования сотрудников
+Chat bot for technical support and employee information
